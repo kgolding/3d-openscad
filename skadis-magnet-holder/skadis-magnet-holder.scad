@@ -1,4 +1,4 @@
-// Customisable magnet holder for IKEA Sakdis pegboards
+// Customisable magnet holder for IKEA Skadis pegboards
 // Author: Kevin Golding
 
 // Number of rows
@@ -22,6 +22,9 @@ s = 4.5; // [0.5:0.1:20]
 // Chamfer size
 chamfer=2; // [0:0.1:5]
 
+// Corner rounding
+rounding=5; // [0:0.1:15]
+
 // Plate thickness (behind magnets)
 plateT=3;   // [1:0.1:10]
 
@@ -35,23 +38,23 @@ tiny2=tiny*2;
 
 assert(mOffset < s - chamfer, "Offset must be smaller than the Spacing less the chamfer");
 
-body(mRows,mCols,chamfer);
+MagneticHolder(mRows,mCols,chamfer,rounding);
 
 // Tests
-//translate([100,00,0]) {
-//  translate([0,00,0]) body(1,1);
-//  translate([30,30,0]) body(2,1);
-//  translate([60,60,0]) body(2,2);
-//  translate([0,90,0]) body(3,1);
-//  translate([30,120,0]) body(3,2);
-//  translate([60,150,0]) body(3,3);
-//  translate([0,180,0]) body(4,1);
-//  translate([30,210,0]) body(4,2);
-//  translate([60,240,0]) body(4,3);
-//  translate([90,270,0]) body(4,4);
-//};
+*translate([100,00,0]) {
+  translate([0,00,0])   MagneticHolder(1,1,chamfer,rounding);
+  translate([30,30,0])  MagneticHolder(2,1,chamfer,rounding);
+  translate([60,60,0])  MagneticHolder(2,2,chamfer,rounding);
+  translate([0,90,0])   MagneticHolder(3,1,chamfer,rounding);
+  translate([30,120,0]) MagneticHolder(3,2,chamfer,rounding);
+  translate([60,150,0]) MagneticHolder(3,3,chamfer,rounding);
+  translate([0,180,0])  MagneticHolder(4,1,chamfer,rounding);
+  translate([30,210,0]) MagneticHolder(4,2,chamfer,rounding);
+  translate([60,240,0]) MagneticHolder(4,3,chamfer,rounding);
+  translate([90,270,0]) MagneticHolder(4,4,chamfer,rounding);
+};
 
-module body(rows, cols, chamfer=2) {
+module MagneticHolder(rows, cols, chamfer=2, rounding=10) {
   // Width
   w = (mDia + s) * cols + s;
   // Height
@@ -59,21 +62,41 @@ module body(rows, cols, chamfer=2) {
   // Depth
   d = plateT + mDepth;
   
-  assert(chamfer < d, "Chamfer too large!");
+  assert(chamfer < d, "Chamfer too large, or plate thickness too shallow!");
   
   difference() {
-    hull() {
-        cube([w, d, h]);
-    }
-    
-    c2 = chamfer * 2;
-
-    if (chamfer > 0) {
-      // Chamfers
-      translate([0,d-chamfer,-tiny]) rotate([0, 0, 45]) cube([c2,c2,h+tiny2]); // Right
-      translate([w,d-chamfer,-tiny]) rotate([0, 0, 45]) cube([c2,c2,h+tiny2]); // Left
-      translate([0,d-chamfer,0]) rotate([0, 90, 0]) rotate([0, 0, 45]) cube([c2,c2,w+tiny2]); // Bottom
-      translate([0,d-chamfer,h]) rotate([0, 90, 0]) rotate([0, 0, 45]) cube([c2,c2,w+tiny2]); // Top
+    if (rounding == 0) {
+      // With no corner rounding we use a cube and mask the chamfers if needed
+      difference() {
+        hull() {
+          cube([w, d, h]);
+        }
+        if (chamfer > 0) {
+          // Chamfers
+          c2 = chamfer * 2;
+          translate([0,d-chamfer,-tiny]) rotate([0, 0, 45]) cube([c2,c2,h+tiny2]); // Right
+          translate([w,d-chamfer,-tiny]) rotate([0, 0, 45]) cube([c2,c2,h+tiny2]); // Left
+          translate([0,d-chamfer,0]) rotate([0, 90, 0]) rotate([0, 0, 45]) cube([c2,c2,w+tiny2]); // Bottom
+          translate([0,d-chamfer,h]) rotate([0, 90, 0]) rotate([0, 0, 45]) cube([c2,c2,w+tiny2]); // Top
+        }
+      }
+    } else {
+      // For corner rounding we hull cylinders at the rear of the body with cones at the front
+      // to give round corners and a chamfers
+      hull() {
+        // Handle rounding when the chamfer is larger than the rounding
+        sround = rounding < chamfer ? 0 : rounding-chamfer;
+        for (x=[rounding,w-rounding]) {
+          for (z=[rounding,h-rounding]) {
+            if (chamfer == 0) {
+              translate([x,0,z]) rotate([-90,0,0]) cylinder(r=rounding,h=d);
+            } else {
+              translate([x,0,z]) rotate([-90,0,0]) cylinder(r=rounding,h=tiny);
+              translate([x,d,z]) rotate([90,0,0]) cylinder(r1=sround,r2=rounding,h=chamfer);
+            }
+          }
+        };
+      };
     }
     
     // Magnets
@@ -86,24 +109,21 @@ module body(rows, cols, chamfer=2) {
   hooks(w, h);
 }
 
+// Hooks renders an grid of hook horizonitally centered for the given width/height
 module hooks(w, h) {
-  echo("=== HOOKS()", w, h);
   hookCols = ceil((w-5) / 20);
   hookRows = ceil((h-15) / 20);
-  echo("hookCols, hookRows", hookCols, hookRows);
 
   // Center by width
   offsetX = (w-((hookCols-1) * 20))/2;
-  oddX = hookRows == 100 ? 10 : 0;
-  echo("offsetX:", offsetX, "oddX:", oddX);
   // Vertically we start 5 mm from the top and work down
   offsetTop = 5;
   for (x=[offsetX:40:w-5]) {
     for (z=[0:40:h-15]) {
-      translate([x+oddX, 0, h-offsetTop-z]) hook();
+      translate([x, 0, h-offsetTop-z]) hook();
     };
   };
-  for (x=[20:40:w-5]) {
+  for (x=[20:40:w-5-offsetX]) {
     for (z=[20:40:h-15]) {
       translate([offsetX+x, 0, h-offsetTop-z]) hook();
     };
