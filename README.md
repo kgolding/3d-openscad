@@ -2,7 +2,7 @@
 
 ## Snippets
 
-[An assorment of OpenSCAD snippets](snippets)
+[An assortment of OpenSCAD snippets](snippets)
 
 ## Skadis magnet holder (customisable)
 
