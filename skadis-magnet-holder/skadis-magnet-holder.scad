@@ -28,8 +28,11 @@ rounding=5; // [0:0.1:15]
 // Plate thickness (behind magnets)
 plateT=3;   // [1:0.1:10]
 
+// Include magnet hole support (as 3D slivers don't seem to handle this very well!)
+support = false;
+
 /* [Hidden] */
-$fn = 50;
+$fn = 30;
 
 /* [Hidden] */
 // tiny is used to ensure preview works as well as render by making masks overlap a little
@@ -38,6 +41,7 @@ tiny2=tiny*2;
 
 assert(mOffset < s - chamfer, "Offset must be smaller than the Spacing less the chamfer");
 
+//projection(true) translate([0,0,-s-mDia/2])
 MagneticHolder(mRows,mCols,chamfer,rounding);
 
 // Tests
@@ -65,48 +69,54 @@ module MagneticHolder(rows, cols, chamfer=2, rounding=10) {
   assert(chamfer < d, "Chamfer too large, or plate thickness too shallow!");
   
   difference() {
-    if (rounding == 0) {
-      // With no corner rounding we use a cube and mask the chamfers if needed
-      difference() {
-        hull() {
-          cube([w, d, h]);
-        }
-        if (chamfer > 0) {
-          // Chamfers
-          c2 = chamfer * 2;
-          translate([0,d-chamfer,-tiny]) rotate([0, 0, 45]) cube([c2,c2,h+tiny2]); // Right
-          translate([w,d-chamfer,-tiny]) rotate([0, 0, 45]) cube([c2,c2,h+tiny2]); // Left
-          translate([0,d-chamfer,0]) rotate([0, 90, 0]) rotate([0, 0, 45]) cube([c2,c2,w+tiny2]); // Bottom
-          translate([0,d-chamfer,h]) rotate([0, 90, 0]) rotate([0, 0, 45]) cube([c2,c2,w+tiny2]); // Top
-        }
-      }
-    } else {
-      // For corner rounding we hull cylinders at the rear of the body with cones at the front
-      // to give round corners and a chamfers
-      hull() {
-        // Handle rounding when the chamfer is larger than the rounding
-        sround = rounding < chamfer ? 0 : rounding-chamfer;
-        for (x=[rounding,w-rounding]) {
-          for (z=[rounding,h-rounding]) {
-            if (chamfer == 0) {
-              translate([x,0,z]) rotate([-90,0,0]) cylinder(r=rounding,h=d);
-            } else {
-              translate([x,0,z]) rotate([-90,0,0]) cylinder(r=rounding,h=tiny);
-              translate([x,d,z]) rotate([90,0,0]) cylinder(r1=sround,r2=rounding,h=chamfer);
-            }
-          }
-        };
-      };
-    }
-    
+    translate([w/2,0,h/2]) rotate([0,90,90]) hull() {
+      chamferNotZero = chamfer ? chamfer : tiny;
+      // Back plate
+      rbox(h,w,tiny,rounding,0);
+      // Front plate with chamfers
+      translate([0,0,d-chamferNotZero]) rbox(h,w,chamferNotZero,rounding,chamferNotZero);
+    };
+
     // Magnets
-    for (row=[0:1:rows-1]) {
+    for (row=[0:1:rows-1])
       for (col=[0:1:cols-1]) {
-        translate([s+mDia/2+col*(mDia+s),d+tiny,mDia/2 + s + row*(mDia+s)]) rotate([90,0,0]) cylinder(d=mDia+mOffset, h=mDepth+tiny);
+        translate([s+mDia/2+col*(mDia+s),d+tiny,mDia/2 + s + row*(mDia+s)])
+          rotate([90,0,0])
+            cylinder(d=mDia+mOffset, h=mDepth+tiny);
       }
-    }
   }
+  // Magnets support
+  if (support) {
+    supportGap = 0.05;
+    supportWidth = 0.1;
+    for (row=[0:1:rows-1])
+      for (col=[0:1:cols-1])
+        translate([s+mDia/2+col*(mDia+s),d,mDia/2 + s + row*(mDia+s)])
+          rotate([90,0,0])
+            for (dia =[mDia+mOffset - 3:-4:0]) {
+              color("grey") difference() {
+                cylinder(r1=dia/2+1, r2=dia/2, h=mDepth+tiny-supportGap);
+                translate([0,0,-1]) cylinder(r1=dia/2-2, r2=dia/2-supportWidth, h=mDepth+tiny*2-supportGap+1);
+              }
+            }
+  }
+
+  // Hooks
   hooks(w, h);
+}
+
+// Rounded rectangle
+module rrect(l,w,r) {
+hull()
+  for (m=[0:1]) mirror([m,0,0])
+    for (m=[0:1]) mirror([0,m,0])
+      translate([l/2-r,w/2-r]) circle(r?r:0.001);
+}
+
+// Tapered box with verticals rounded
+module rbox(l,w,d,r,taper) {
+  sx=(l-2*taper)/l; sy=(w-2*taper)/w;    // scaling
+  linear_extrude(height=d, center=false, convexity=10, scale=[sx,sy]) rrect(l,w,r);
 }
 
 // Hooks renders an grid of hook horizonitally centered for the given width/height
