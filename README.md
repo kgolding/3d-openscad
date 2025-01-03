@@ -6,7 +6,7 @@
 
 ## DIN Rail PCB holder (customisable)
 
-[DIN Rail PCB holder (customisable) ![DIN Rail PCB holder (customisable)](din-rail-pcb-holder/din-rail-pcb-holder_20250103_135706.png)](din-rail-pcb-holder)
+[DIN Rail PCB holder (customisable) ![DIN Rail PCB holder (customisable)](din-rail-pcb-holder/din-rail-pcb-holder-halfs-and-whole_20250103_215114.png)](din-rail-pcb-holder)
 
 ## Skadis magnet holder (customisable)
 
