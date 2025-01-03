@@ -80,9 +80,9 @@ module MagneticHolder(rows, cols, chamfer=2, rounding=10) {
     // Magnets
     for (row=[0:1:rows-1])
       for (col=[0:1:cols-1]) {
-        translate([s+mDia/2+col*(mDia+s),d+tiny,mDia/2 + s + row*(mDia+s)])
+        translate([s+mDia/2+col*(mDia+s),d+2,mDia/2 + s + row*(mDia+s)])
           rotate([90,0,0])
-            cylinder(d=mDia+mOffset, h=mDepth+tiny);
+            cylinder(d=mDia+mOffset, h=mDepth+2);
       }
   }
   // Magnets support
