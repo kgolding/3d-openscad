@@ -3,9 +3,9 @@
 // Show part laid down ready for 3D Printing without support
 Show_Parts = true;
 
-PCB_Width = 30;
+PCB_Width = 30; // [10:0.1:220]
 
-PCB_Height = 70;
+PCB_Height = 70; // [40:0.1:220]
 
 PCB_Thickness = 1.6;
 
@@ -16,7 +16,7 @@ Text = "My PCB";
 Text_Size = 8;
 
 // Extra width/height to allow it to fit
-PCB_Extra = 0.5;
+PCB_Extra = 0.6;
 
 // Size of lip holding the PCB in place
 LIP_Size = 1.2;
@@ -91,6 +91,7 @@ module pcbHolderWithDinClip(half="") {
           cylinder(r2=0, r1=counterSinkD/2, h=counterSinkD/2);
       // Screw thread hole
       translate([0, 0, 0]) rotate([-90,0,0]) cylinder(d=Screw_Thread_Diameter, h=pcbWidth+lip*2 - 2);
+      translate([0, cutW/2-tiny, 0]) rotate([-90,0,0]) cylinder(r1=Screw_Thread_Diameter/2+0.5, r2=Screw_Thread_Diameter/2, 2);
     }
   }
 }
@@ -146,11 +147,12 @@ module dinclip(width, clipWidth=8, half="") {
     
     lr = 1.5;       // Large radius
     sr = 0.75;      // Small radius
-    xr = lr * 4;    // Extra large radius
+    xr = lr * 3;    // Extra large radius
     
     pegR1 = 0.8;
-    pegR2 = 1.2;
-    pegH = 2;
+    pegR2 = 2;
+    pegH = 3;
+    pegSocketScale = 1.02;
     
     difference() {
       union() {
@@ -227,7 +229,7 @@ module dinclip(width, clipWidth=8, half="") {
         if (left) { // Pegs
             translate([d - backGap - dinD/2 + dinT-pegR1,clipOverlap+clipGap,-pegH])
               cylinder(pegH, pegR1, pegR2);
-            translate([d - backGap - dinD/2 + dinT,h-dinFromTop+overlap/2,-pegH])
+            translate([d - backGap - dinD/2 + dinT/2,h-dinFromTop+overlap/2,-pegH])
               cylinder(pegH, pegR1, pegR2);
             translate([2+pegR2,h-dinFromTop+overlap/2,-pegH])
               cylinder(pegH, pegR1, pegR2);
@@ -236,19 +238,25 @@ module dinclip(width, clipWidth=8, half="") {
           }
       } // End of body union
       
-      if (right) { // Peg sockets
-        translate([d - backGap - dinD/2 + dinT-pegR1,clipOverlap+clipGap,w-pegH+tiny])
-          scale(1.05)
-            cylinder(pegH+tiny, pegR1, pegR2);
-        translate([d - backGap - dinD/2 + dinT,h-dinFromTop+overlap/2,w-pegH+tiny])
-          scale(1.05)
-            cylinder(pegH+tiny, pegR1, pegR2);
-        translate([2+pegR2,h-dinFromTop+overlap/2,w-pegH+tiny])
-          scale(1.05)
-            cylinder(pegH+tiny, pegR1, pegR2);
-        translate([2+pegR2,clipT+clipGap+pegR2+3,w-pegH+tiny])
-          scale(1.05)
-            cylinder(pegH+tiny, pegR1, pegR2);
+      if (right) { // Peg sockets rotated so that scaling them makes them bigger in the body
+        translate([0,0,w+tiny]) {
+          translate([d - backGap - dinD/2 + dinT-pegR1,clipOverlap+clipGap,0])
+            scale(pegSocketScale)
+              rotate([0,180,0])
+                cylinder(pegH+tiny, pegR2, pegR1);
+          translate([d - backGap - dinD/2 + dinT/2,h-dinFromTop+overlap/2,0])
+            scale(pegSocketScale)
+              rotate([0,180,0])
+                cylinder(pegH+tiny, pegR2, pegR1);
+          translate([2+pegR2,h-dinFromTop+overlap/2,0])
+            scale(pegSocketScale)
+              rotate([0,180,0])
+                cylinder(pegH+tiny, pegR2, pegR1);
+          translate([2+pegR2,clipT+clipGap+pegR2+3,0])
+            scale(pegSocketScale)
+              rotate([0,180,0])
+                cylinder(pegH+tiny, pegR2, pegR1);
+        }
       }
     }
   }
