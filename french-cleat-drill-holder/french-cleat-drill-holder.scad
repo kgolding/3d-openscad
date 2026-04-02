@@ -1,0 +1,245 @@
+// French cleat drill holder
+// Designed for CNC
+
+WIDTH = 100;
+HEIGHT = 200;
+DEPTH = 180;
+
+TOOL_WIDTH = 44;
+TOOL_HEIGHT = HEIGHT * 0.3;
+ANGLE = 40;
+CUTOUT_DEPTH = 35;
+
+BOTTOM_ROUNDING = 15;
+WALL = 9;
+TOP_BAR = 20;
+
+$fn = 60;
+SHOW = "all"; // ["all", "side", "top", "bottom", "rear", "angled shelf"]
+SHOW_DRILL = true;
+
+if (SHOW == "all") {
+  color("pink") SideMasked();
+  color("brown") BottomShelf();
+  color("purple") RearPlate();
+  color("blue") TopBar();
+  color("green") AngledShelf();
+  color("pink") translate([0, WIDTH + WALL,0]) SideMasked();
+} else if (SHOW == "side") {
+  difference() {
+    SideMasked();
+    RearPlate();
+    TopBar();
+    BottomShelf();
+    AngledShelf();
+  }
+} else if (SHOW == "bottom") {
+  BottomShelf();
+} else if (SHOW == "top") {
+  TopBar();
+} else if (SHOW == "rear") {
+  RearPlate();
+} else if (SHOW == "angled shelf") {
+  AngledShelf();
+}
+
+if (SHOW_DRILL) {
+  %translate([115,WIDTH/2,200]) rotate([0,ANGLE,180]) Drill();
+}
+
+module SideMasked() {
+  SideWithCleat();
+//  translate([0, WIDTH + WALL,0]) SideWithCleat();
+}
+
+module BottomShelf() {
+  cube([DEPTH - BOTTOM_ROUNDING, WIDTH, WALL]);
+    tab_end_distance = 10;
+    tab = (DEPTH - BOTTOM_ROUNDING - 2*tab_end_distance) / 5;
+    translate([tab_end_distance,0,0]) {
+        translate([0,-WALL,0]) cube([tab,WALL,WALL]);
+        translate([tab*2,-WALL,0]) cube([tab,WALL,WALL]);
+        translate([tab*4,-WALL,0]) cube([tab,WALL,WALL]);
+        translate([0,WIDTH,0]) cube([tab,WALL,WALL]);
+        translate([tab*2,WIDTH,0]) cube([tab,WALL,WALL]);
+        translate([tab*4,WIDTH,0]) cube([tab,WALL,WALL]);
+    }
+}
+
+module TopBar() {
+  translate([0,0, HEIGHT - 15]) rotate([0,90-ANGLE,0]) {
+    cube([WALL, WIDTH, TOP_BAR]);
+    tab = TOP_BAR / 4;
+    translate([0,-WALL,tab]) cube([WALL,WALL,tab*2]);
+    translate([0,WIDTH,tab]) cube([WALL,WALL,tab*2]);
+  }
+}
+
+module RearPlate() {
+  translate([0,0, WALL]) {
+    cube([WALL, WIDTH, TOOL_HEIGHT - WALL]);
+    tab_edge_distance = 10;
+    tab = (TOOL_HEIGHT-WALL-2*tab_edge_distance) / 1;
+    translate([0,0,tab_edge_distance]) {
+        translate([0,-WALL,0]) cube([WALL,WALL,tab]);
+        translate([0,WIDTH,0]) cube([WALL,WALL,tab]);
+    }
+  }
+}
+
+module AngledShelf() {
+  translate([0,0,TOOL_HEIGHT + WALL])
+    rotate([0,-ANGLE,0])
+      translate([0,0,-WALL]) {
+        difference() {
+          cube([DEPTH, WIDTH, WALL]);
+          // Cut out
+          hull() {
+            translate([DEPTH-CUTOUT_DEPTH, WIDTH/2, -1]) cylinder(d=TOOL_WIDTH, h=WALL+2);
+            translate([DEPTH, WIDTH/2, -1]) cylinder(d=TOOL_WIDTH * 1.1, h=WALL+2);
+            //translate([DEPTH, WIDTH/2, WALL/2]) cube([1, TOOL_WIDTH, WALL+2], center=true);
+          }
+        }
+        // Tabs
+        tab_end_distance = 10;
+        tab = (DEPTH - 2*tab_end_distance) / 5;
+        translate([tab_end_distance,0,0]) {
+            translate([0,-WALL,0]) cube([tab,WALL,WALL]);
+            translate([tab*2,-WALL,0]) cube([tab,WALL,WALL]);
+            translate([tab*4,-WALL,0]) cube([tab,WALL,WALL]);
+            translate([0,WIDTH,0]) cube([tab,WALL,WALL]);
+            translate([tab*2,WIDTH,0]) cube([tab,WALL,WALL]);
+            translate([tab*4,WIDTH,0]) cube([tab,WALL,WALL]);
+        }
+      }
+}
+
+module SideWithCleat() {
+  Side(HEIGHT, DEPTH, rb=BOTTOM_ROUNDING, rt=DEPTH * 0.5, t=WALL);
+}
+
+
+module Side(h, d, rb = 10, rt = 70, t=12.5) {
+  assert(h > rt);
+  assert(d > rt);
+  rotate([90,0,0]) linear_extrude(t) offset(-1.6) offset(1.6) {
+    translate([0,h-50,0]) rotate([0,180,180]) FrenchCleat2D(18, 50);
+    difference() {
+      hull() {
+        // Bottom rear
+        square([1,1]);
+        // Bottom front
+        translate([d - rb, rb]) circle(rb);
+        // Front top
+        translate([d-rt, h-rt]) intersection() {
+          circle(rt);
+          square([rt,rt]);
+        };
+        // Rear top
+        translate([0, h-1]) square([1,1]);
+      }
+      // Lower cut out
+      m = 15;
+      offset(-m) hull() {
+        r = 20;
+        translate([WALL +  r, WALL + r]) circle(r); // Bottom rear
+        translate([WALL +  r, WALL + TOOL_HEIGHT - r]) circle(r); // Top rear
+        translate([DEPTH - WALL - r, WALL + r]) circle(r); // Bottom front
+        translate([DEPTH - WALL - r, WALL + TOOL_HEIGHT - r + (sin(ANGLE)*(DEPTH-r))]) circle(r); // Front top
+      }
+    }
+  }
+}
+
+module FrenchCleat2D(t = 18, h = 50) {
+ /*
+           /  0
+          /│   
+         / │   
+        /  │   
+       /   │   
+      /    │ h  
+    3 │    │   
+      │    │   
+      │    │   
+      │ t  │   
+    2 │────│ 1 
+
+  Edit/view: https://cascii.app/40ae3  
+  */
+  translate([-t,0]) rotate(-90) hull() {
+    translate([1.6,1.6,0]) circle(r=1.6); // 0
+//    translate([h-2,1,0]) circle(r=2); // 1
+//    translate([h-1,t,0]) square([1,1]); // 2
+//    translate([t,t-1,0]) square([1,1]); // 3
+//    translate([t,t-2,0]) intersection() {
+//      circle(2);
+//      square([2,2]); // 3
+//    }
+    translate([t,0,0]) square([h-t,t]); // 1/2/3
+  }
+//  translate([-t,0,-h]) rotate([90,180,0]) linear_extrude(l) polygon([
+//    [0,0], [0,-h], [-t,-h], [-t, -t],
+//  ]);
+}
+
+
+module FrenchCleat(t = 18, h = 50, l = 50) {
+ /*
+           /  0
+          /│   
+         / │   
+        /  │   
+       /   │   
+      /    │ h  
+    3 │    │   
+      │    │   
+      │    │   
+      │ t  │   
+    2 │────│ 1 
+
+  Edit/view: https://cascii.app/40ae3  
+  */
+  translate([-t,-l,-h]) rotate([-90,-90,0]) linear_extrude(l) hull() {
+    translate([2,2,0]) circle(r=2); // 0
+//    translate([h-2,1,0]) circle(r=2); // 1
+//    translate([h-1,t,0]) square([1,1]); // 2
+//    translate([t,t-1,0]) square([1,1]); // 3
+//    translate([t,t-2,0]) intersection() {
+//      circle(2);
+//      square([2,2]); // 3
+//    }
+    translate([t,0,0]) square([h-t,t]); // 1/2/3
+  }
+//  translate([-t,0,-h]) rotate([90,180,0]) linear_extrude(l) polygon([
+//    [0,0], [0,-h], [-t,-h], [-t, -t],
+//  ]);
+}
+
+module Drill() {
+  handle_narrowest = 37.5;
+  handle_length_from_center = 150;
+  handle_from_rear = 55;
+  handle_angle = 10;
+  body_widest = 53;
+  body_length = 138;
+  chuck_and_bit_length = 55;
+  trigger_from_handle_center = 50;
+  tigger_height_from_center_body = 70;
+  
+  color("#00003333") translate([0,0,0]) {
+    rotate([0,handle_angle,0]) union() {
+      // Handle
+      translate([0,0,-handle_length_from_center]) cylinder(d=handle_narrowest, h=handle_length_from_center);
+      // Trigger
+      hull() {
+        translate([0,0,-tigger_height_from_center_body]) cylinder(d=handle_narrowest, h=tigger_height_from_center_body);
+        translate([trigger_from_handle_center-handle_narrowest ,0,-tigger_height_from_center_body]) cylinder(d=handle_narrowest, h=tigger_height_from_center_body);
+      }
+    }
+    // Body
+    translate([-handle_from_rear,0,0]) rotate([0,90,0]) cylinder(d=body_widest, h=body_length);
+    // Chuck and bit
+    translate([-handle_from_rear+body_length,0,0]) rotate([0,90,0]) cylinder(d=20, h=chuck_and_bit_length);
+  }
+}

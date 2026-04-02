@@ -1,0 +1,24 @@
+{
+    "parameterSets": {
+        "HALO": {
+            "$fn": "30",
+            "HOOKS_MODE": "edge",
+            "KEYHOLE_DISTANCE": "84",
+            "KEYHOLE_MIN_FROM_EDGE": "6",
+            "MANUAL_LEFT": "10",
+            "MANUAL_TOP": "10",
+            "MIN_HEIGHT": "60",
+            "MIN_WIDTH": "105",
+            "ORIENTATION": "Horizontal",
+            "POSITION": "Centered",
+            "ROUNDING": "5",
+            "SCREW_HOLE_DIA": "5.5",
+            "TEXT": "HALO",
+            "TEXT_ONLY": "false",
+            "TEXT_SIZE": "10",
+            "WALL": "7",
+            "tiny": "0.01"
+        }
+    },
+    "fileFormatVersion": "1"
+}
